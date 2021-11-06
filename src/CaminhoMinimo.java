@@ -20,7 +20,23 @@ public class CaminhoMinimo {
 	public static void main(String[] args) throws Exception {
 		String directory = System.getProperty("user.dir");
 
-		runInstance(directory + "/instancias/instancia_id1_n30_p4_Q100.txt");
+		String[] instances = { "instancia_id9_n40_p6_Q100.txt", "instancia_id10_n40_p6_Q100.txt",
+				"instancia_id11_n40_p8_Q100.txt", "instancia_id12_n40_p8_Q100.txt", "instancia_id13_n50_p4_Q100.txt",
+				"instancia_id14_n50_p4_Q100.txt", "instancia_id15_n50_p6_Q100.txt", "instancia_id16_n50_p6_Q100.txt",
+				"instancia_id17_n50_p8_Q100.txt", "instancia_id18_n50_p8_Q100.txt", "instancia_id19_n60_p4_Q100.txt",
+				"instancia_id20_n60_p4_Q100.txt", "instancia_id21_n60_p6_Q100.txt", "instancia_id22_n60_p6_Q100.txt",
+				"instancia_id23_n60_p8_Q100.txt", "instancia_id24_n60_p8_Q100.txt", "instancia_id25_n70_p4_Q100.txt",
+				"instancia_id26_n70_p4_Q100.txt", "instancia_id27_n70_p6_Q100.txt", "instancia_id28_n70_p6_Q100.txt",
+				"instancia_id29_n70_p8_Q100.txt", "instancia_id30_n70_p8_Q100.txt", "instancia_id31_n80_p4_Q100.txt",
+				"instancia_id32_n80_p4_Q100.txt", "instancia_id33_n80_p6_Q100.txt", "instancia_id34_n80_p6_Q100.txt",
+				"instancia_id35_n80_p8_Q100.txt", "instancia_id36_n80_p8_Q100.txt" };
+		
+		
+		for (int i = 0; i < instances.length; i++) {
+			System.out.println("Rodando instancia " + instances[i]);
+			runInstance(directory + "/instancias/" + instances[i]);
+			System.out.println("Terminou de rodar instancia");
+		}
 	}
 
 	static void runInstance(String fileName) throws Exception {
@@ -62,21 +78,13 @@ public class CaminhoMinimo {
 		});
 
 		System.out.println("\n");
+		String[] splitted = fileName.split("/");
 
-		resolveInstance(nodes, vehicles);
+		resolveInstance(nodes, vehicles, true, splitted[splitted.length - 1]);
 	}
 
-	static void resolveInstance(List<Node> nodes, List<Vehicle> vehicles) throws Exception {
-		/*
-		 * for (int i = 0; i < nos.size(); i++) { Node node = nos.get(i);
-		 * 
-		 * for (int j = 0; j < nos.size(); j++) { Node secondNode = nos.get(j);
-		 * 
-		 * System.out.println("Distancia entre no " + i + " e no " + j + ": " +
-		 * getDistance(node.getX(), node.getY(), secondNode.getX(), secondNode.getY()));
-		 * } }
-		 */
-
+	static void resolveInstance(List<Node> nodes, List<Vehicle> vehicles, boolean withRestrictions, String fileName)
+			throws Exception {
 		// criando um model "vazio" no gurobi
 		GRBEnv env = new GRBEnv("dieta.log");
 		GRBModel model = new GRBModel(env);
@@ -85,7 +93,6 @@ public class CaminhoMinimo {
 
 		Map<String, GRBVar> x = new HashMap<String, GRBVar>();
 		Map<Integer, GRBVar> u = new HashMap<Integer, GRBVar>();
-		// List<GRBVar> costs = new ArrayList<>();
 
 		for (int v = 0; v < vehicles.size(); v++) {
 			Vehicle vehicle = vehicles.get(v);
@@ -100,26 +107,25 @@ public class CaminhoMinimo {
 						x.put(getKey(vehicle, node, secondNode), model.addVar(0.0, 1.0, getDistance(node, secondNode),
 								GRB.BINARY, "x= " + getKey(vehicle, node, secondNode)));
 					}
-
-					// costs.add(model.addVar(0.0, GRB.INFINITY, getDistance(node, secondNode),
-					// GRB.CONTINUOUS,
-					// "distancia origem: " + node.getNumber() + "destino: " +
-					// secondNode.getNumber()));
 				}
 			}
 		}
 
-		for (int i = 1; i < nodes.size(); i++) {
-			Node node = nodes.get(i);
+		if (withRestrictions) {
+			for (int i = 1; i < nodes.size(); i++) {
+				Node node = nodes.get(i);
 
-			// testar passando a demanda
-			u.put(node.getNumber(),
-					model.addVar(node.getDemand(), vehicles.get(0).getMaxCapacity(), 0, GRB.INTEGER, "u= " + node.getNumber()));
+				u.put(node.getNumber(), model.addVar(node.getDemand(), vehicles.get(0).getMaxCapacity(), 0, GRB.INTEGER,
+						"u= " + node.getNumber()));
+			}
 		}
+
+		String directory = System.getProperty("user.dir");
 
 		// função objetivo de minimização
 		model.set(GRB.IntAttr.ModelSense, GRB.MINIMIZE);
 		model.set(GRB.DoubleParam.TimeLimit, 3600.0);
+		model.set(GRB.StringParam.LogFile, directory + "/resultados/resultado_" + fileName);
 
 		System.out.println("Restrição 1 \n");
 		// Restrição 1
@@ -178,35 +184,38 @@ public class CaminhoMinimo {
 
 			model.addConstr(expr, GRB.LESS_EQUAL, vehicle.getMaxCapacity(), "RES 3, CARRO " + vehicle.getNumber());
 		}
-		
-		System.out.println("Restrição 4 \n");
-		for (int i = 1; i < nodes.size(); i++) {
-			Node originNode = nodes.get(i);
-			
-			for (int j = 1; j < nodes.size(); j++) {
-				Node destinationNode = nodes.get(j);
-				
-				if (originNode.getNumber() != destinationNode.getNumber()) {
-					GRBLinExpr leftExpr = new GRBLinExpr();
-					GRBLinExpr rightExpr = new GRBLinExpr();
-					
-					leftExpr.addTerm(1, u.get(destinationNode.getNumber()));
-					leftExpr.addTerm(-1, u.get(originNode.getNumber()));
-					
-					GRBLinExpr vehiclesExpr = new GRBLinExpr();
-					
-					vehiclesExpr.addConstant(1);
-					
-					rightExpr.addConstant(destinationNode.getDemand());
-					rightExpr.addConstant(vehicles.get(0).getMaxCapacity() * -1);
 
-					for(Vehicle vehicle : vehicles) {
-						rightExpr.addTerm(vehicles.get(0).getMaxCapacity(), x.get(getKey(vehicle, originNode, destinationNode)));
+		if (withRestrictions) {
+			System.out.println("Restrição 4 \n");
+			for (int i = 1; i < nodes.size(); i++) {
+				Node originNode = nodes.get(i);
+
+				for (int j = 1; j < nodes.size(); j++) {
+					Node destinationNode = nodes.get(j);
+
+					if (originNode.getNumber() != destinationNode.getNumber()) {
+						GRBLinExpr leftExpr = new GRBLinExpr();
+						GRBLinExpr rightExpr = new GRBLinExpr();
+
+						leftExpr.addTerm(1, u.get(destinationNode.getNumber()));
+						leftExpr.addTerm(-1, u.get(originNode.getNumber()));
+
+						GRBLinExpr vehiclesExpr = new GRBLinExpr();
+
+						vehiclesExpr.addConstant(1);
+
+						rightExpr.addConstant(destinationNode.getDemand());
+						rightExpr.addConstant(vehicles.get(0).getMaxCapacity() * -1);
+
+						for (Vehicle vehicle : vehicles) {
+							rightExpr.addTerm(vehicles.get(0).getMaxCapacity(),
+									x.get(getKey(vehicle, originNode, destinationNode)));
+						}
+
+						// rightExpr.multAdd(vehicles.get(0).getMaxCapacity(), vehiclesExpr);
+
+						model.addConstr(leftExpr, GRB.GREATER_EQUAL, rightExpr, null);
 					}
-					
-					//rightExpr.multAdd(vehicles.get(0).getMaxCapacity(), vehiclesExpr);
-					
-					model.addConstr(leftExpr, GRB.GREATER_EQUAL, rightExpr, null);
 				}
 			}
 		}
@@ -241,17 +250,15 @@ public class CaminhoMinimo {
 
 		System.out.println("Chamando resolução do solver \n");
 		// chama o solver para resolver o modelo
-		
+
 		model.write(System.getProperty("user.dir") + "modelo.lp");
 		model.optimize();
-		
-		/*
 
-		// deu tudo certo?
-		if (model.get(IntAttr.Status) != GRB.OPTIMAL) {
-			throw new RuntimeException("Status: " + IntAttr.Status);
-		}
-		*/
+		/*
+		 * 
+		 * // deu tudo certo? if (model.get(IntAttr.Status) != GRB.OPTIMAL) { throw new
+		 * RuntimeException("Status: " + IntAttr.Status); }
+		 */
 
 		System.out.println("Resolvido! Resultados: \n");
 		for (Map.Entry<String, GRBVar> varX : x.entrySet()) {
@@ -259,11 +266,11 @@ public class CaminhoMinimo {
 				System.out.println(varX.getKey() + ": " + varX.getValue().get(DoubleAttr.X));
 			}
 		}
-		
+
 		for (Map.Entry<Integer, GRBVar> varU : u.entrySet()) {
-			//if (varU.getValue().get(DoubleAttr.X) > EPSILON) {
-				System.out.println(varU.getKey() + ": " + varU.getValue().get(DoubleAttr.X));
-			//}
+			// if (varU.getValue().get(DoubleAttr.X) > EPSILON) {
+			System.out.println(varU.getKey() + ": " + varU.getValue().get(DoubleAttr.X));
+			// }
 		}
 	}
 

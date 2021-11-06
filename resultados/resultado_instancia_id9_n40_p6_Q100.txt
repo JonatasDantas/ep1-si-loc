@@ -1,0 +1,35 @@
+
+Gurobi 9.1.2 (win64) logging started Sat Nov  6 18:35:33 2021
+
+Warning: variable name "x= veículo: 0, origem: 0, destino: 1" has a space
+Warning: constraint name "RES 1, NÓ 0" has a space
+Warning: to let Gurobi read it back, use rlp format
+Gurobi Optimizer version 9.1.2 build v9.1.2rc0 (win64)
+Thread count: 2 physical cores, 4 logical processors, using up to 4 threads
+Optimize a model with 1779 rows, 9399 columns and 49296 nonzeros
+Model fingerprint: 0x71a4a1ae
+Variable types: 0 continuous, 9399 integer (9360 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+02]
+  Objective range  [1e+01, 1e+03]
+  Bounds range     [1e+00, 1e+02]
+  RHS range        [1e+00, 1e+02]
+Presolve removed 6 rows and 0 columns
+Presolve time: 0.13s
+Presolved: 1773 rows, 9399 columns, 48822 nonzeros
+Variable types: 0 continuous, 9399 integer (9360 binary)
+
+Root relaxation: objective 5.652041e+03, 716 iterations, 0.08 seconds
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 5652.04147    0   93          - 5652.04147      -     -    0s
+     0     0 6173.56403    0  115          - 6173.56403      -     -    0s
+     0     0 6205.15485    0  110          - 6205.15485      -     -    0s
+     0     0 6216.21511    0   97          - 6216.21511      -     -    0s
+     0     0 6216.21511    0   98          - 6216.21511      -     -    0s
+     0     0 6216.21511    0  112          - 6216.21511      -     -    1s
+     0     0 6216.21511    0  126          - 6216.21511      -     -    1s
+     0     0 6216.21511    0  142          - 6216.21511      -     -    1s
+     0     0 6216.21511    0   90          - 6216.21511      -     -    2s
